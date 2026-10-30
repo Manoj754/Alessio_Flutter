@@ -25,9 +25,10 @@ It's built with **Riverpod** for state management and a **feature-first MVVM** a
 11. [Image loading and performance](#image-loading-and-performance)
 12. [Design system](#design-system)
 13. [Testing](#testing)
-14. [Platform configuration](#platform-configuration)
-15. [Known limitations and notes](#known-limitations-and-notes)
-16. [How to add a new feature](#how-to-add-a-new-feature)
+14. [Responsive layout](#responsive-layout)
+15. [Platform configuration](#platform-configuration)
+16. [Known limitations and notes](#known-limitations-and-notes)
+17. [How to add a new feature](#how-to-add-a-new-feature)
 
 ---
 
@@ -290,10 +291,10 @@ Riverpod 2.x is used **without code generation** (`Notifier` / `AsyncNotifier` c
 - **Header:**
   - A greeting with the user's first name, the "Discover" title and the user's initials avatar (which opens the account sheet).
   - Scrolling down hides the greeting and keeps the **search bar pinned**.
-  - **Any scroll up brings the header back**, so the profile button is always one small scroll away. This uses a `SliverAppBar` set to `pinned`, `floating` and `snap`.
-- **Grid:** 2 columns with square product photos.
+  - **Any scroll up brings the header back**, so the profile button is always one small scroll away. This uses a `SliverAppBar` set to `pinned` and `floating`. It is deliberately **not** `snap`: snapping runs when a scroll stops, and tapping the avatar mid-glide stopped the scroll with no direction, which snap treats as "close", so the header hid under the user's finger.
+- **Grid:** square product photos, **2 columns on phones and more on tablets** (as many as fit at a minimum card width of 170px).
   - Each card shows a discount badge, rating chip, brand, a two-line title, the price and the original price crossed out.
-  - Card height grows with the user's text size, so text never gets clipped.
+  - Card height grows with the user's text size, and a long price shrinks slightly instead of wrapping, so nothing gets clipped.
 - **Pagination** (`ProductListController.loadMore`):
   - Loads **20 products per page** (`skip`/`limit`) and starts the next page **800px before the end** of the list.
   - Safe to call on every scroll event. It does nothing while loading, when everything is loaded, or after a page failed (it waits for retry).
@@ -402,6 +403,21 @@ There are **14 unit tests**. None need a device or the network: the repository i
 | [`api_client_test.dart`](test/core/network/api_client_test.dart) | Refresh succeeds → retry. Refresh rejected → logout and tokens cleared. Offline or 5xx during refresh → session kept. Three requests failing with 401 at once share **one** refresh call. |
 | [`product_list_controller_test.dart`](test/features/products/product_list_controller_test.dart) | First page loads. `loadMore` until the end with no duplicates. A failed page keeps the items and can be retried. A failed refresh keeps the list. An empty catalogue gives the empty state. The search query reaches every page request. |
 | [`product_search_controller_test.dart`](test/features/products/product_search_controller_test.dart) | Typing quickly applies only the final text, once. Submit applies immediately and trims spaces. Clear cancels a pending search. |
+
+---
+
+## Responsive layout
+
+The app is built to work on small phones, large phones and tablets, with the keyboard open or closed, and with large system text sizes.
+
+| Area | How it adapts |
+|---|---|
+| **Product grid** | Column count comes from the screen width (2 on phones, up to 6 on wide screens). Card height = square photo + a text block scaled with the user's text size. |
+| **List header** | The header height is calculated from the text size; the greeting and title are limited to one line each. The search bar has a fixed, text-scaled height, and its slot in the header is calculated from that height, so the two always match. |
+| **Login** | Scrolls when the keyboard is open (the focused field scrolls into view, and dragging closes the keyboard). The form is limited to 460px wide on tablets. |
+| **Product detail** | Content is limited to 640px wide on tablets. Chips and the rating line wrap onto a second line instead of overflowing. The photo area is capped in height on wide screens. |
+| **Empty / error states** | Use `SliverFillRemaining(hasScrollBody: false)`, so they centre in the free space and still scroll when the keyboard reduces the height. |
+| **Search keyboard** | Tapping outside the field or dragging the list closes the keyboard. |
 
 ---
 

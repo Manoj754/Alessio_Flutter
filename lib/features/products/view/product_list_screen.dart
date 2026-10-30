@@ -37,6 +37,9 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
   static const double _gutter = 16;
   static const double _gap = 12;
 
+  /// Narrowest a grid card may get before a column is dropped.
+  static const double _minCardWidth = 170;
+
   @override
   void initState() {
     super.initState();
@@ -99,15 +102,18 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
     final controller = ref.read(listProvider.notifier);
     final user = ref.watch(authControllerProvider.select((s) => s.user));
 
-    // Square photo + fixed text block, scaled with the user's text size so
-    // cards never clip.
+    // As many columns as fit at [_minCardWidth] (2 on phones, more on
+    // tablets). Each cell is a square photo + a text block scaled with the
+    // user's text size, so cards never clip.
+    final textScaler = MediaQuery.textScalerOf(context);
     final width = MediaQuery.sizeOf(context).width;
-    final cardWidth = (width - _gutter * 2 - _gap) / 2;
-    final cardHeight =
-        cardWidth +
-        MediaQuery.textScalerOf(context).scale(productCardInfoHeight);
+    final columns = ((width - _gutter * 2 + _gap) / (_minCardWidth + _gap))
+        .floor()
+        .clamp(2, 6);
+    final cardWidth = (width - _gutter * 2 - _gap * (columns - 1)) / columns;
+    final cardHeight = cardWidth + textScaler.scale(productCardInfoHeight);
     final gridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 2,
+      crossAxisCount: columns,
       mainAxisSpacing: _gap,
       crossAxisSpacing: _gap,
       mainAxisExtent: cardHeight,
@@ -116,8 +122,8 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
 
     // Greeting row: top padding + the taller of the two text lines and the
     // 46px avatar + a gap above the search bar. Scales with text size.
-    final headerHeight =
-        12 + MediaQuery.textScalerOf(context).scale(58).clamp(46.0, 140.0) + 8;
+    final headerHeight = 12 + textScaler.scale(60).clamp(46.0, 160.0) + 8;
+    final searchSlot = ProductSearchBar.slotHeight(context);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
@@ -137,10 +143,14 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                 // bar pinned; any scroll UP brings the greeting (and the
                 // profile button) straight back, so logging out never means
                 // scrolling all the way to the top.
+                //
+                // No `snap`: snapping runs when a scroll stops, and tapping the
+                // avatar while the list was still gliding stopped it with no
+                // direction — which snap treats as "close", hiding the header
+                // under the user's finger.
                 SliverAppBar(
                   pinned: true,
                   floating: true,
-                  snap: true,
                   automaticallyImplyLeading: false,
                   backgroundColor: AppColors.background,
                   surfaceTintColor: Colors.transparent,
@@ -148,7 +158,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                   elevation: 0,
                   toolbarHeight: 0,
                   collapsedHeight: 0,
-                  expandedHeight: headerHeight + searchBarSlotHeight,
+                  expandedHeight: headerHeight + searchSlot,
                   flexibleSpace: FlexibleSpaceBar(
                     collapseMode: CollapseMode.pin,
                     background: Align(
@@ -169,19 +179,16 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                     ),
                   ),
                   bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(searchBarSlotHeight),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                      child: ProductSearchBar(
-                        controller: _searchText,
-                        onChanged: ref
-                            .read(productSearchProvider.notifier)
-                            .onChanged,
-                        onSubmitted: ref
-                            .read(productSearchProvider.notifier)
-                            .submit,
-                        onClear: _clearSearch,
-                      ),
+                    preferredSize: Size.fromHeight(searchSlot),
+                    child: ProductSearchBar(
+                      controller: _searchText,
+                      onChanged: ref
+                          .read(productSearchProvider.notifier)
+                          .onChanged,
+                      onSubmitted: ref
+                          .read(productSearchProvider.notifier)
+                          .submit,
+                      onClear: _clearSearch,
                     ),
                   ),
                 ),
@@ -191,7 +198,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                     // Reserve the line while the count loads so nothing
                     // shifts.
                     child: SizedBox(
-                      height: 18,
+                      height: textScaler.scale(18),
                       child: switch (async.valueOrNull?.total) {
                         null => null,
                         final total => Text(
@@ -296,22 +303,32 @@ class _Header extends StatelessWidget {
     return Row(
       children: [
         Expanded(
+          // `min`: inside the app bar the column has a bounded height, and
+          // stretching to fill it pushed the avatar (centred beside it) down
+          // under the search bar. One line each, so a long name can't grow
+          // the header past the space reserved for it.
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 name == null || name.isEmpty
                     ? AppStrings.helloFallback
                     : AppStrings.hello(name),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.body(color: AppColors.textSecondary),
               ),
               Text(
                 AppStrings.productsTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.headline(color: AppColors.ink),
               ),
             ],
           ),
         ),
+        const SizedBox(width: 12),
         Semantics(
           button: true,
           label: AppStrings.account,

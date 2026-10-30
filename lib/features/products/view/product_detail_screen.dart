@@ -98,21 +98,26 @@ class _Content extends StatelessWidget {
               borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             ),
             padding: EdgeInsets.fromLTRB(20, 24, 20, 32 + bottom),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _Summary(product: product),
-                const _Divider(),
-                _SectionTitle(AppStrings.description),
-                const SizedBox(height: 8),
-                _ExpandableText(product.description),
-                const _Divider(),
-                _SectionTitle(AppStrings.details),
-                const SizedBox(height: 12),
-                _DetailsList(product: product),
-                const _Divider(),
-                _Reviews(product: product),
-              ],
+            // Readable line length on tablets; full width on phones.
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _Summary(product: product),
+                  const _Divider(),
+                  _SectionTitle(AppStrings.description),
+                  const SizedBox(height: 8),
+                  _ExpandableText(product.description),
+                  const _Divider(),
+                  _SectionTitle(AppStrings.details),
+                  const SizedBox(height: 12),
+                  _DetailsList(product: product),
+                  const _Divider(),
+                  _Reviews(product: product),
+                ],
+              ),
             ),
           ),
         ),
@@ -133,17 +138,18 @@ class _Summary extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        // Wrap, not Row: long category/brand names or large text move to a
+        // second line instead of overflowing.
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
             _Chip(
               category.isEmpty
                   ? ''
                   : category[0].toUpperCase() + category.substring(1),
             ),
-            if (product.brand != null) ...[
-              const SizedBox(width: 8),
-              _Chip(product.brand!),
-            ],
+            if (product.brand != null) _Chip(product.brand!),
           ],
         ),
         const SizedBox(height: 14),
@@ -152,10 +158,11 @@ class _Summary extends StatelessWidget {
           style: AppTextStyles.title(color: AppColors.ink, fontSize: 24),
         ),
         const SizedBox(height: 10),
-        Row(
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
           children: [
             StarRow(product.rating),
-            const SizedBox(width: 8),
             Text(
               product.rating.toStringAsFixed(1),
               style: AppTextStyles.cardTitle(
@@ -163,12 +170,11 @@ class _Summary extends StatelessWidget {
                 fontSize: 13,
               ),
             ),
-            if (product.reviews.isNotEmpty) ...[
+            if (product.reviews.isNotEmpty)
               Text(
-                '  ·  ${AppStrings.reviewCount(product.reviews.length)}',
+                '·  ${AppStrings.reviewCount(product.reviews.length)}',
                 style: AppTextStyles.caption(color: AppColors.textSecondary),
               ),
-            ],
           ],
         ),
         const SizedBox(height: 18),
@@ -406,16 +412,18 @@ class _RatingSummary extends StatelessWidget {
             style: AppTextStyles.headline(color: AppColors.ink, fontSize: 36),
           ),
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              StarRow(average, size: 18),
-              const SizedBox(height: 4),
-              Text(
-                AppStrings.basedOnReviews(count),
-                style: AppTextStyles.caption(color: AppColors.textSecondary),
-              ),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                StarRow(average, size: 18),
+                const SizedBox(height: 4),
+                Text(
+                  AppStrings.basedOnReviews(count),
+                  style: AppTextStyles.caption(color: AppColors.textSecondary),
+                ),
+              ],
+            ),
           ),
         ],
       ),

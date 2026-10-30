@@ -50,74 +50,80 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: SingleChildScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-            child: AutofillGroup(
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: BrandMark(),
+            // Comfortable form width on tablets; full width on phones.
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: AutofillGroup(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: BrandMark(),
+                        ),
+                        const SizedBox(height: 32),
+                        const _CategoryShowcase(),
+                        const SizedBox(height: 32),
+                        Text(
+                          AppStrings.loginTitle,
+                          style: AppTextStyles.headline(color: AppColors.ink),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          AppStrings.loginSubtitle,
+                          style: AppTextStyles.body(
+                            color: AppColors.textSecondary,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        AppTextField(
+                          label: AppStrings.usernameLabel,
+                          hint: AppStrings.usernameHint,
+                          icon: Icons.person_outline_rounded,
+                          controller: _username,
+                          validator: usernameProblem,
+                          onChanged: (_) => controller.clearError(),
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.username],
+                          enabled: !status.isLoading,
+                        ),
+                        const SizedBox(height: 18),
+                        AppTextField(
+                          label: AppStrings.passwordLabel,
+                          hint: AppStrings.passwordHint,
+                          icon: Icons.lock_outline_rounded,
+                          isPassword: true,
+                          controller: _password,
+                          validator: passwordProblem,
+                          onChanged: (_) => controller.clearError(),
+                          onSubmitted: (_) => _submit(),
+                          textInputAction: TextInputAction.done,
+                          autofillHints: const [AutofillHints.password],
+                          enabled: !status.isLoading,
+                        ),
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOut,
+                          child: status.hasError
+                              ? Padding(
+                                  padding: const EdgeInsets.only(top: 18),
+                                  child: _ErrorBanner(status.error.toString()),
+                                )
+                              : const SizedBox(width: double.infinity),
+                        ),
+                        const SizedBox(height: 28),
+                        PrimaryButton(
+                          text: AppStrings.logIn,
+                          isLoading: status.isLoading,
+                          onPressed: _submit,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 32),
-                    const _CategoryShowcase(),
-                    const SizedBox(height: 32),
-                    Text(
-                      AppStrings.loginTitle,
-                      style: AppTextStyles.headline(color: AppColors.ink),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      AppStrings.loginSubtitle,
-                      style: AppTextStyles.body(
-                        color: AppColors.textSecondary,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    AppTextField(
-                      label: AppStrings.usernameLabel,
-                      hint: AppStrings.usernameHint,
-                      icon: Icons.person_outline_rounded,
-                      controller: _username,
-                      validator: usernameProblem,
-                      onChanged: (_) => controller.clearError(),
-                      textInputAction: TextInputAction.next,
-                      autofillHints: const [AutofillHints.username],
-                      enabled: !status.isLoading,
-                    ),
-                    const SizedBox(height: 18),
-                    AppTextField(
-                      label: AppStrings.passwordLabel,
-                      hint: AppStrings.passwordHint,
-                      icon: Icons.lock_outline_rounded,
-                      isPassword: true,
-                      controller: _password,
-                      validator: passwordProblem,
-                      onChanged: (_) => controller.clearError(),
-                      onSubmitted: (_) => _submit(),
-                      textInputAction: TextInputAction.done,
-                      autofillHints: const [AutofillHints.password],
-                      enabled: !status.isLoading,
-                    ),
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeOut,
-                      child: status.hasError
-                          ? Padding(
-                              padding: const EdgeInsets.only(top: 18),
-                              child: _ErrorBanner(status.error.toString()),
-                            )
-                          : const SizedBox(width: double.infinity),
-                    ),
-                    const SizedBox(height: 28),
-                    PrimaryButton(
-                      text: AppStrings.logIn,
-                      isLoading: status.isLoading,
-                      onPressed: _submit,
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),

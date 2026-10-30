@@ -8,7 +8,7 @@ import 'package:flutterapp/features/products/view/product_badges.dart';
 
 /// Height of a card's text block under the square photo, before text
 /// scaling. The grid sizes its cells from this so cards never clip.
-const double productCardInfoHeight = 100;
+const double productCardInfoHeight = 104;
 
 /// One grid tile: square photo on a grey tile with the discount and rating
 /// floating on it, then brand, a two-line title and the price.
@@ -83,7 +83,13 @@ class ProductCard extends StatelessWidget {
                       style: AppTextStyles.cardTitle(color: AppColors.ink),
                     ),
                     const Spacer(),
-                    PriceTag(product),
+                    // One line always: a long price shrinks slightly rather
+                    // than wrapping and overflowing the card.
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: PriceTag(product),
+                    ),
                   ],
                 ),
               ),
